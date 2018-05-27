@@ -1,0 +1,153 @@
+.App {
+  text-align: left;
+}
+
+.App-header {
+  background-color: #222;
+  height: 50px;
+  padding: 5px;
+  color: white;
+  text-align: center;
+}
+
+.App-logo {
+  /*animation: App-logo-spin infinite 20s linear;*/
+  height: 50px;
+  /*float: left;*/
+  left: 5px;
+  position: absolute;
+}
+
+.App-title {
+  font-size: 1.8em;
+  margin: 10px auto;
+}
+
+.App-info {
+  font-size: 1.0em;
+  position: absolute;
+  right: 5px;
+  top: 0px;
+  height: 60px;
+  text-align: right;
+  line-height: 1.3em;
+}
+
+/*@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}*/
+
+.App-couLogin {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+/*
+ * CouchDBLogin
+ */
+
+.couLogin-title {
+  padding: 20px;
+}
+
+.couLogin-form {
+  padding: 20px;
+  width: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mdc-textfield {
+  margin-bottom: 1em;
+}
+
+.mdc-textfield__input {
+  width: 100%;
+}
+
+.mdc-button {
+  width: 120px;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/*
+ * CSSTransitionGroup
+ */
+
+.fade-appear {
+  margin-top: 30px;
+  opacity: .01;
+}
+
+.fade-appear.fade-appear-active {
+  margin-top: 0px;
+  opacity: 1;
+  transition: opacity .5s ease, margin .5s ease;
+}
+
+.fade-leave {
+  margin-top: 0px;
+  opacity: 1;
+}
+
+.fade-leave.fade-leave-active {
+  margin-top: -30px;
+  opacity: .01;
+  transition: opacity .3s ease, margin .5s ease;
+}
+
+/*
+ * Tabs
+ */
+
+.tabs {
+  margin: 0px;
+  background: #fff;
+  border: 0px solid #e5e5e5;
+  /*border-radius: 3px;*/
+}
+
+.tabs__labels {
+  margin: 0;
+  padding: 0;
+  background: rgb(68, 68, 68);
+}
+
+.tabs__labels li {
+  display: inline-block;
+}
+
+.tabs__labels li a {
+  padding: 8px 12px;
+  display: block;
+  color: #fff;
+  text-decoration: none;
+  border-bottom: 2px solid rgb(68, 68, 68);
+}
+
+.tabs__labels li a.active {
+  background: #337ab7;
+  border-bottom-color: #337ab7;
+}
+
+.tabs__content {
+  padding: 25px;
+}
+
+/*
+ * Tabs content
+ */
+
+.tabs__content-title {
+  padding: 0px;
+}
+
+.tabs__content-form {
+  padding: 0px;
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+}
