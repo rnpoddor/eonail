@@ -40,7 +40,7 @@ class DocView extends Component {
   }
 }
 
-class DocsView extends Component {
+export default class DocsView extends Component {
   render() {
       const { docs } = this.props;
 
@@ -62,4 +62,3 @@ class DocsView extends Component {
 }
 
 export { DocsView, DocView };
-export default DocsView;

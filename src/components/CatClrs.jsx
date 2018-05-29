@@ -5,9 +5,10 @@ import withCouchDB from '../hoc/withCouchDB';
 import { DocsView, DocView } from './DocsView';
 
 class CatClrs extends Component {
-  state = {
-    clr_name: ''
-  }
+  /*state = {
+    clr_name: '',
+    data: {}
+  }*/
 
   componentDidMount = () => {
     const { apiUrl, dbName, couchDB: { address, db, area } } = this.props;
@@ -23,10 +24,7 @@ class CatClrs extends Component {
 
     const { clr_name } = event.target;
     
-    this.setState({
-      clr_name: clr_name.value
-    });
-
+    // задаем критерии поиска
     const data = {
       "selector": {
         "class_name": "cat.clrs",
@@ -35,21 +33,59 @@ class CatClrs extends Component {
         }
       }
     };
-    this.props.post('_find', data);
+    this.props.post('_find', data,
+      response => {
+        //if (response.status === 200) {
+          const { data } = response;
+          this.props.setState({
+            clr_name: clr_name.value,
+            data
+          });
+        //}
+      },
+      error => {
+        this.props.setState({
+          clr_name: clr_name.value,
+          data: error
+        });
+      });
   }
 
   handleRemove = () => {
-    const { data: { docs } } = this.props;
+    const { data: { docs } } = this.props.state;
 
-    this.props.delete(docs[0]._id);
+    this.props.delete(`${docs[0]._id}?rev=${docs[0]._rev}`,
+      response => {
+        //if (response.status === 200) {
+          const { data } = response;
+          if (data.ok) {
+            this.props.setState({
+              data: {
+                docs,
+                deleted: true
+              }
+            });
+          }
+        //}
+      },
+      error => {
+        this.props.setState({
+          data: {
+            docs,
+            deleted: false
+          }
+        });
+      });
   }
 
   render() {
-    const { data, data: { docs }, couchDB: { roles } } = this.props;
-    const { clr_name } = this.state;
+    const { couchDB: { roles } } = this.props;
+    const { clr_name, data, data: { docs, deleted }} = this.props.state;
 
     // проверяем права на редактирование
-    const allow = roles.indexOf("ram_editor") !== -1;
+    const allow =
+      roles.indexOf("_admin") !== -1 ||
+      roles.indexOf("ram_editor") !== -1;
 
     return (
       <div>
@@ -72,7 +108,7 @@ class CatClrs extends Component {
           </div>
         </form>
         <br />
-        {docs && docs.length > 0 &&
+        {docs && docs.length > 0 && deleted === undefined &&
           <div>
             Найдено документов: {docs.length}<br />
             <br />
@@ -95,7 +131,17 @@ class CatClrs extends Component {
         }
         {docs && docs.length === 0 &&
           <div>
-            Ничего не найдено!
+            <b>Ничего не найдено!</b>
+          </div>
+        }
+        {deleted &&
+          <div>
+            <b>Цвет "{docs[0].name}" успешно удален!</b>
+          </div>
+        }
+        {deleted === false &&
+          <div>
+            <b>Не удалось удалить цвет "{docs[0].name}".</b>
           </div>
         }
         {!docs && data &&

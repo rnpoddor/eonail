@@ -27,7 +27,17 @@ class App extends Component {
       roles: ''
     },
     mounted: true,
-    logged: false
+    logged: false,
+    tabs: {
+      catClrs: {
+        clr_name: '',
+        data: {}
+      }
+    }
+  }
+
+  setCatClrsState = (state) => {
+    this.setState({ tabs: { catClrs: state }});
   }
 
   handleUnmount = () => {
@@ -136,8 +146,7 @@ class App extends Component {
           {this.state.logged &&
             <div>
               {this.state.couchDB.address + '/' + this.state.couchDB.db + this.state.couchDB.area}<br />
-              {this.state.couchDB.login}<br />
-              <a href="#ВЫХОД" onClick={this.handleLogout}>ВЫХОД</a>
+              {this.state.couchDB.login} (<a href="#ВЫХОД" onClick={this.handleLogout}>ВЫХОД</a>)
             </div>
           }
           </div>
@@ -163,7 +172,9 @@ class App extends Component {
           <Tabs selected={0}>
             <Pane label="Цвет">
               <CatClrs
-                couchDB={this.state.couchDB} />
+                couchDB={this.state.couchDB}
+                state={this.state.tabs.catClrs}
+                setState={this.setCatClrsState} />
             </Pane>
             <Pane label="Режим эксперта">
               <div>В разработке.</div>

@@ -5,8 +5,7 @@ function withCouchDB(Component) {
   class WithCouchDB extends React.Component {
     state = {
       url: '',
-      db: '',
-      data: {}
+      db: ''
     };
 
     apiUrl = (url) => {
@@ -17,25 +16,27 @@ function withCouchDB(Component) {
       this.setState({ db });
     }
 
-    get = id => {
+    get = (id, cbOK, cbError) => {
       axios.get(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
         .then(response => {
           console.log(response.data);
-          if (response.status === 200) {
-            const { data } = response;
-            this.setState({ data });
-          }
+          cbOK(response);
+        })
+        .catch(error => {
+          console.log(error);
+          cbError(error);
         });
     }
 
-    post = (id, data) => {
+    post = (id, data, cbOK, cbError) => {
       axios.post(`${this.state.url}/${this.state.db}/${id}`, data, { withCredentials: true })
         .then(response => {
           console.log(response.data);
-          if (response.status === 200) {
-            const { data } = response;
-            this.setState({ data });
-          }
+          cbOK(response);
+        })
+        .catch(error => {
+          console.log(error);
+          cbError(error);
         });
     }
 
@@ -56,24 +57,20 @@ function withCouchDB(Component) {
         });*/
     }
 
-    delete = id => {
+    delete = (id, cbOK, cbError) => {
       axios.delete(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
         .then(response => {
           console.log(response.data);
-          if (response.status === 200) {
-            const { data } = response;
-            this.setState({ data });
-          }
+          cbOK(response);
         })
         .catch(error => {
           console.log(error);
-          this.setState({ data: error });
+          cbError(error);
         });
     }
 
     render() {
       return <Component
-        data={this.state.data}
         apiUrl={this.apiUrl}
         dbName={this.dbName}
         get={this.get}
