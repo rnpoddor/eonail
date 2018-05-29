@@ -54,28 +54,27 @@ class CatClrs extends Component {
   handleRemove = () => {
     const { data: { docs } } = this.props.state;
 
-    this.props.delete(`${docs[0]._id}?rev=${docs[0]._rev}`,
-      response => {
-        //if (response.status === 200) {
-          const { data } = response;
-          if (data.ok) {
-            this.props.setState({
-              data: {
-                docs,
-                deleted: true
-              }
-            });
-          }
-        //}
-      },
-      error => {
-        this.props.setState({
-          data: {
-            docs,
-            deleted: false
-          }
+    let deleted = 0;
+    for (let i = 0; i < docs.length; i++) {
+      this.props.delete(`${docs[i]._id}?rev=${docs[i]._rev}`,
+        response => {
+          //if (response.status === 200) {
+            const { data } = response;
+            if (data.ok) {
+              deleted++;
+            }
+          //}
+        },
+        error => {
         });
-      });
+    }
+
+    this.props.setState({
+      data: {
+        docs,
+        deleted: docs.length //deleted
+      }
+    });
   }
 
   render() {
@@ -115,7 +114,7 @@ class CatClrs extends Component {
             <DocsView
               docs={docs} />
             <br />
-            {docs.length === 1 && allow &&
+            {/*docs.length === 1 &&*/ allow &&
               <button
                   className="mdc-button mdc-button--primary mdc-button--raised"
                   onClick={this.handleRemove}>
@@ -139,7 +138,7 @@ class CatClrs extends Component {
             <b>Цвет "{docs[0].name}" успешно удален!</b>
           </div>
         }
-        {deleted === false &&
+        {deleted === 0 &&
           <div>
             <b>Не удалось удалить цвет "{docs[0].name}".</b>
           </div>

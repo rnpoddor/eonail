@@ -21,7 +21,7 @@ class App extends Component {
     couchDB: {
       login: '',
       password: '',
-      address: 'https://develop.ecookna.ru/couchdb',
+      address: 'https://zakaz.ecookna.ru/couchdb',
       db: 'wb_',
       area: '21',
       roles: ''
