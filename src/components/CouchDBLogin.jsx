@@ -19,7 +19,7 @@ class CouchDBLogin extends Component {
     
     render() {
         const { onLogin, couchDB } = this.props;
-        const { login, address, db, area } = couchDB;
+        const { login, address, db, area, postfix } = couchDB;
 
         return (
             <div>
@@ -51,6 +51,12 @@ class CouchDBLogin extends Component {
                         type="text"
                         placeholder="Область данных"
                         value={area} />
+
+                    <Input
+                        id="postfix"
+                        type="text"
+                        placeholder="Постфикс"
+                        value={postfix} />
 
                     {/*<Select
                         name="server"

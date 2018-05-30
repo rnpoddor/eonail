@@ -7,6 +7,7 @@ import './App.css';
 import CouchDBLogin from './components/CouchDBLogin';
 import { Tabs, Pane } from './components/Tabs';
 import CatClrs from './components/CatClrs';
+import ExpertMode from './components/ExpertMode';
 
 class Hello extends Component {
   render() {
@@ -32,12 +33,20 @@ class App extends Component {
       catClrs: {
         clr_name: '',
         data: {}
+      },
+      expertMode: {
+        clr_name: '',
+        data: {}
       }
     }
   }
 
   setCatClrsState = (state) => {
     this.setState({ tabs: { catClrs: state }});
+  }
+
+  setExpertModeState = (state) => {
+    this.setState({ tabs: { expertMode: state }});
   }
 
   handleUnmount = () => {
@@ -177,7 +186,10 @@ class App extends Component {
                 setState={this.setCatClrsState} />
             </Pane>
             <Pane label="Режим эксперта">
-              <div>В разработке.</div>
+              <ExpertMode
+                couchDB={this.state.couchDB}
+                state={this.state.tabs.ExpertMode}
+                setState={this.setExpertModeState} />
             </Pane>
           </Tabs>
         }
