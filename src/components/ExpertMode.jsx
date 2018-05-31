@@ -1,62 +1,123 @@
 import React, { Component } from 'react';
+import Select from 'react-select';
 
-import Input from './Input';
+import Textarea from './Textarea';
 import withCouchDB from '../hoc/withCouchDB';
 import { DocsView, DocView } from './DocsView';
 
 class ExpertMode extends Component {
   componentDidMount = () => {
-    const { apiUrl, dbName, couchDB: { address, db, area, postfix } } = this.props;
+    const { apiUrl, dbName, couchDB, couchDB: { address }, getDBName, state: { db_type } } = this.props;
 
     // задаем URI с нужной базой
     apiUrl(address);
-    dbName(db + area + '_doc' + '_' + postfix);
+    dbName(getDBName(couchDB, db_type));
   }
+
+  getSetOptions = function() {
+    return [
+      { value: 'doc', label: 'Шаблон для doc' },
+      { value: 'ram', label: 'Шаблон для ram' },
+      { value: 'null_partner', label: 'Нулевой контрагент' },
+      { value: 'color', label: 'Цвет' }
+    ];
+  }
+
+  getSets = function(set) {
+    const sets = {
+      doc: {
+        type: 'doc',
+        selector: {
+          "selector": {
+            "class_name": {
+              "$eq": "doc.calc_order"
+            },
+            "number_doc": {
+              "$eq": ""
+            }
+          },
+          "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"]
+        }
+      },
+      ram: {
+        type: 'ram',
+        selector: {
+          "selector": {
+            "name": {
+              "$eq": ""
+            }
+          },
+          "fields": ["_id", "_rev", "name", "timestamp"]
+        }
+      },
+      null_partner: {
+        type: 'doc',
+        selector: {
+          "selector": {
+            "class_name": {
+              "$eq": "doc.calc_order"
+            },
+            "partner": {
+              "$eq": "00000000-0000-0000-0000-000000000000"
+            },
+            "number_doc": {
+              "$regex": "^[\\d]{4}[\\S]{1,2}[\\d]{5,}$"
+            }
+          },
+          "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"]
+        }
+      },
+      color: {
+        type: 'ram',
+        selector: {
+          "selector": {
+            "class_name": "cat.clrs",
+            "name": {
+              "$eq": ""
+            }
+          }
+        }
+      }
+    };
+
+    return sets[set];
+  }
+
+  handleChangeSet = (selectedSet) => {
+    if (selectedSet) {
+      const { value } = selectedSet;
+      const set = this.getSets(value);
+      //const { dbName, couchDB, getDBName, state: { db_type } } = this.props;
+
+      //dbName(getDBName(couchDB, db_type));
+
+      this.props.setState({
+        selectedSet: value,
+        db_type: set.type,
+        selector: set.selector,
+        data: {}
+      });
+    }
+  };
 
   handleSubmit = event => {
     // предотвращаем передачу данных формой на сервер
     event.preventDefault();
 
-    const { clr_name } = event.target;
+    const { selector } = event.target;
     
     // задаем критерии поиска
-    /*const data = {
-      "selector": {
-        "class_name": "cat.clrs",
-        "name": {
-          "$eq": clr_name.value
-        }
-      }
-    };*/
-
-    // задаем критерии поиска
-    const data = {
-      "selector": {
-        "class_name": {
-          "$eq": "doc.calc_order"
-        },
-        "partner": {
-          "$eq": "00000000-0000-0000-0000-000000000000"
-        },
-        "number_doc": {
-          "$regex": "^[\\d]{4}[\\S]{1,2}[\\d]{5,}$"
-        }
-      },
-      "fields": ["_id", "number_doc", "partner", "timestamp"]
-    };
-    this.props.post('_find', data,
+    this.props.post('_find', selector,
       response => {
         //if (response.status === 200) {
           const { data } = response;
           this.props.setState({
-            clr_name: clr_name.value,
             data
           });
         //}
       },
       error => {
         this.props.setState({
-          clr_name: clr_name.value,
           data: error
         });
       });
@@ -65,7 +126,6 @@ class ExpertMode extends Component {
   handleRemove = () => {
     const { data: { docs } } = this.props.state;
 
-    let deleted = 0;
     for (let i = 0; i < docs.length; i++) {
       if (docs[i]._id && docs[i]._rev) {
         this.props.delete(`${docs[i]._id}?rev=${docs[i]._rev}`,
@@ -73,7 +133,7 @@ class ExpertMode extends Component {
             //if (response.status === 200) {
               const { data } = response;
               if (data.ok) {
-                deleted++;
+                
               }
             //}
           },
@@ -85,14 +145,14 @@ class ExpertMode extends Component {
     this.props.setState({
       data: {
         docs,
-        deleted: docs.length //deleted
+        deleted: docs.length
       }
     });
   }
 
   render() {
     const { couchDB: { roles } } = this.props;
-    const { clr_name, data, data: { docs, deleted }} = this.props.state;
+    const { selectedSet, db_type, selector, data, data: { docs, deleted }} = this.props.state;
 
     // проверяем права на редактирование
     const allow =
@@ -108,11 +168,17 @@ class ExpertMode extends Component {
         <form
           className="tabs__content-form mdc-theme--light"
           onSubmit={this.handleSubmit}>
-          <Input
-            id="clr_name"
-            type="text"
-            placeholder="Название цвета"
-            value={clr_name} />
+          <Select
+            name="set"
+            value={selectedSet}
+            onChange={this.handleChangeSet}
+            options={this.getSetOptions()} /><br />
+          Тип базы данных: {db_type}<br />
+          <br />
+          <Textarea
+            id="selector"
+            value={JSON.stringify(selector)}
+            placeholder="Параметры отбора" />
           <div>
             <button className="mdc-button mdc-button--primary mdc-button--raised">
               Найти

@@ -1,16 +1,8 @@
 import React, { Component } from 'react';
-import Select from 'react-select';
 
 import Input from './Input';
 
 class CouchDBLogin extends Component {
-    /*handleChange = (selectedOption) => {
-        this.setState({ selectedOption });
-    };
-
-    const { selectedOption } = this.state;
-    const value = selectedOption && selectedOption.value;*/
-
     componentWillUnmount() {
         const { onUnmount } = this.props;
 
@@ -33,40 +25,35 @@ class CouchDBLogin extends Component {
                         id="login"
                         type="text"
                         placeholder="Логин"
-                        value={login} />
+                        value={login}
+                        required={true} />
 
                     <Input
                         id="password"
                         type="password"
-                        placeholder="Пароль" />
+                        placeholder="Пароль"
+                        required={true} />
 
                     <Input
                         id="address"
                         type="text"
                         placeholder="Адрес CouchDB"
-                        value={address + '/' + db} />
+                        value={address + '/' + db}
+                        required={true} />
 
                     <Input
                         id="area"
                         type="text"
                         placeholder="Область данных"
-                        value={area} />
+                        value={area}
+                        required={true} />
 
                     <Input
                         id="postfix"
                         type="text"
                         placeholder="Постфикс"
-                        value={postfix} />
-
-                    {/*<Select
-                        name="server"
-                        value={value}
-                        onChange={this.handleChange}
-                        options={[
-                        { value: 'develop', label: 'develop' },
-                        { value: 'zakaz', label: 'zakaz' },
-                        ]}
-                    />*/}
+                        value={postfix}
+                        required={false} />
 
                     <button className="mdc-button mdc-button--primary mdc-button--raised">
                         Войти

@@ -54,14 +54,13 @@ class CatClrs extends Component {
   handleRemove = () => {
     const { data: { docs } } = this.props.state;
 
-    let deleted = 0;
     for (let i = 0; i < docs.length; i++) {
       this.props.delete(`${docs[i]._id}?rev=${docs[i]._rev}`,
         response => {
           //if (response.status === 200) {
             const { data } = response;
             if (data.ok) {
-              deleted++;
+              
             }
           //}
         },
@@ -72,7 +71,7 @@ class CatClrs extends Component {
     this.props.setState({
       data: {
         docs,
-        deleted: docs.length //deleted
+        deleted: docs.length
       }
     });
   }
@@ -99,7 +98,8 @@ class CatClrs extends Component {
             id="clr_name"
             type="text"
             placeholder="Название цвета"
-            value={clr_name} />
+            value={clr_name}
+            required={true} />
           <div>
             <button className="mdc-button mdc-button--primary mdc-button--raised">
               Найти

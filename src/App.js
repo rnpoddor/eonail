@@ -9,14 +9,6 @@ import { Tabs, Pane } from './components/Tabs';
 import CatClrs from './components/CatClrs';
 import ExpertMode from './components/ExpertMode';
 
-class Hello extends Component {
-  render() {
-    return (
-      <p>Hello World!</p>
-    );
-  }
-}
-
 class App extends Component {
   state = {
     couchDB: {
@@ -25,6 +17,7 @@ class App extends Component {
       address: 'https://zakaz.ecookna.ru/couchdb',
       db: 'wb_',
       area: '21',
+      postfix: '',
       roles: ''
     },
     mounted: true,
@@ -35,10 +28,18 @@ class App extends Component {
         data: {}
       },
       expertMode: {
-        clr_name: '',
+        selectedSet: 'doc',
+        db_type: 'doc',
+        selector: '',
         data: {}
       }
     }
+  }
+
+  getDBName = (couchDB, type) => {
+    const { db, area, postfix } = couchDB;
+
+    return db + area + '_' + type + (postfix ? ('_' + postfix) : '');
   }
 
   setCatClrsState = (state) => {
@@ -71,7 +72,7 @@ class App extends Component {
     // предотвращаем передачу данных формой на сервер
     event.preventDefault();
 
-    const { login, password, address, area } = event.target;
+    const { login, password, address, area, postfix } = event.target;
 
     // выдергиваем название базы
     const reg_db_name = address.value.match(/\w+$/i);
@@ -82,7 +83,8 @@ class App extends Component {
       password: password.value,
       address: addr,
       db: reg_db_name[0],
-      area: area.value
+      area: area.value,
+      postfix: postfix.value
     };
 
     // настройка запроса
@@ -105,7 +107,7 @@ class App extends Component {
         if (response.status === 200 && response.data.ok) {
           let logged = false;
           // делаем проверку существования введенной базы
-          if (await this.checkDB(couchDB.address, couchDB.db + couchDB.area + '_doc')) {
+          if (await this.checkDB(couchDB.address, this.getDBName(couchDB, 'doc'))) {
             logged = true;
             console.log('check DB successful!');
           }
@@ -146,6 +148,8 @@ class App extends Component {
   }
 
   render() {
+    const { couchDB: { db, area, postfix } } = this.state;
+
     return (
       <div className="App">
         <header className="App-header">
@@ -154,7 +158,7 @@ class App extends Component {
           <div className="App-info">
           {this.state.logged &&
             <div>
-              {this.state.couchDB.address + '/' + this.state.couchDB.db + this.state.couchDB.area}<br />
+              {this.state.couchDB.address + '/' + db + area + (postfix ? (' (' + postfix + ')') : '')}<br />
               {this.state.couchDB.login} (<a href="#ВЫХОД" onClick={this.handleLogout}>ВЫХОД</a>)
             </div>
           }
@@ -182,13 +186,15 @@ class App extends Component {
             <Pane label="Цвет">
               <CatClrs
                 couchDB={this.state.couchDB}
+                getDBName={this.getDBName}
                 state={this.state.tabs.catClrs}
                 setState={this.setCatClrsState} />
             </Pane>
             <Pane label="Режим эксперта">
               <ExpertMode
                 couchDB={this.state.couchDB}
-                state={this.state.tabs.ExpertMode}
+                getDBName={this.getDBName}
+                state={this.state.tabs.expertMode}
                 setState={this.setExpertModeState} />
             </Pane>
           </Tabs>
