@@ -6,10 +6,10 @@ function Textarea({ id, placeholder, value }) {
             <textarea
                 id={id}
                 className="mdc-textfield__textarea"
-                name={id}
+                name="textarea"
                 placeholder={placeholder}
-                defaultValue={value}
-            />
+                value={value}>
+            </textarea>
         </div>
     );
 }

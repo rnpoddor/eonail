@@ -111,9 +111,6 @@ class CatClrs extends Component {
           <div>
             Найдено документов: {docs.length}<br />
             <br />
-            <DocsView
-              docs={docs} />
-            <br />
             {/*docs.length === 1 &&*/ allow &&
               <button
                   className="mdc-button mdc-button--primary mdc-button--raised"
@@ -123,9 +120,13 @@ class CatClrs extends Component {
             }
             {!allow &&
               <div>
-                <b>Нет прав на удаление документа.</b>
+                <b>Нет прав на удаление документов.</b>
               </div>
             }
+            <br />
+            <br />
+            <DocsView
+              docs={docs} />
           </div>
         }
         {docs && docs.length === 0 &&

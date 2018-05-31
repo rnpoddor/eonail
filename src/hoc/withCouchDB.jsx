@@ -17,7 +17,7 @@ function withCouchDB(Component) {
     }
 
     get = (id, cbOK, cbError) => {
-      axios.get(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
+      return axios.get(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
         .then(response => {
           console.log(response.data);
           cbOK(response);
@@ -29,7 +29,14 @@ function withCouchDB(Component) {
     }
 
     post = (id, data, cbOK, cbError) => {
-      axios.post(`${this.state.url}/${this.state.db}/${id}`, data, { withCredentials: true })
+      return axios.post(`${this.state.url}/${this.state.db}/${id}`, data, {
+        // увеличиваем время ожидания запроса
+        //timeout: 5000,
+        // указываем что должны запрашиваться необходимые параметры
+        withCredentials: true,
+        // увеличиваем размер содержимого ответа
+        //maxContentLength: 1000000
+      })
         .then(response => {
           console.log(response.data);
           cbOK(response);
@@ -41,7 +48,7 @@ function withCouchDB(Component) {
     }
 
     update = id => {
-      /*axios.patch(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
+      /*return axios.patch(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
         .then(response => response.data)
         .then(updatedItem => {
           const data = this.state.data.map(item => {
@@ -58,7 +65,7 @@ function withCouchDB(Component) {
     }
 
     delete = (id, cbOK, cbError) => {
-      axios.delete(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
+      return axios.delete(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
         .then(response => {
           console.log(response.data);
           cbOK(response);

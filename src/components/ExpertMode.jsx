@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Select from 'react-select';
+import 'react-select/dist/react-select.css';
 
 import Textarea from './Textarea';
 import withCouchDB from '../hoc/withCouchDB';
@@ -7,19 +8,27 @@ import { DocsView, DocView } from './DocsView';
 
 class ExpertMode extends Component {
   componentDidMount = () => {
-    const { apiUrl, dbName, couchDB, couchDB: { address }, getDBName, state: { db_type } } = this.props;
+    const { apiUrl, dbName, couchDB, couchDB: { address }, getDBName, state: { selectedSet, db_type, data } } = this.props;
+    const set = this.getSets(selectedSet);
 
     // задаем URI с нужной базой
     apiUrl(address);
     dbName(getDBName(couchDB, db_type));
+
+    this.props.setState({
+      selectedSet: selectedSet,
+      db_type: set.type,
+      selector: set.selector,
+      data
+    });
   }
 
   getSetOptions = function() {
     return [
       { value: 'doc', label: 'Шаблон для doc' },
       { value: 'ram', label: 'Шаблон для ram' },
-      { value: 'null_partner', label: 'Нулевой контрагент' },
-      { value: 'color', label: 'Цвет' }
+      { value: 'color', label: 'Цвет' },
+      { value: 'null_partner', label: 'Нулевой контрагент или не существует' }
     ];
   }
 
@@ -27,56 +36,62 @@ class ExpertMode extends Component {
     const sets = {
       doc: {
         type: 'doc',
-        selector: {
-          "selector": {
-            "class_name": {
-              "$eq": "doc.calc_order"
-            },
-            "number_doc": {
-              "$eq": ""
-            }
-          },
-          "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"]
-        }
+        selector: `{
+  "selector": {
+    "class_name": {
+      "$eq": "doc.calc_order"
+    },
+    "number_doc": {
+      "$eq": ""
+    }
+  },
+  "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"],
+  "limit": 100
+}`
       },
       ram: {
         type: 'ram',
-        selector: {
-          "selector": {
-            "name": {
-              "$eq": ""
-            }
-          },
-          "fields": ["_id", "_rev", "name", "timestamp"]
-        }
-      },
-      null_partner: {
-        type: 'doc',
-        selector: {
-          "selector": {
-            "class_name": {
-              "$eq": "doc.calc_order"
-            },
-            "partner": {
-              "$eq": "00000000-0000-0000-0000-000000000000"
-            },
-            "number_doc": {
-              "$regex": "^[\\d]{4}[\\S]{1,2}[\\d]{5,}$"
-            }
-          },
-          "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"]
-        }
+        selector: `{
+  "selector": {
+    "name": {
+      "$eq": ""
+    }
+  },
+  "fields": ["_id", "_rev", "name", "timestamp"],
+  "limit": 100
+}`
       },
       color: {
         type: 'ram',
-        selector: {
-          "selector": {
-            "class_name": "cat.clrs",
-            "name": {
-              "$eq": ""
-            }
-          }
-        }
+        selector: `{
+  "selector": {
+    "class_name": "cat.clrs",
+    "name": {
+      "$eq": ""
+    }
+  }
+}`
+      },
+      null_partner: {
+        type: 'doc',
+        selector: `{
+  "selector": {
+    "class_name": {
+      "$eq": "doc.calc_order"
+    },
+    "partner": {
+      "$or": [
+        { "$eq": "00000000-0000-0000-0000-000000000000" },
+        { "$exists": false }
+      ]
+    },
+    "number_doc": {
+      "$regex": "^[\\\\d]{4}[\\\\S]{1,2}[\\\\d]{5,}$"
+    }
+  },
+  "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"],
+  "limit": 100
+}`
       }
     };
 
@@ -105,19 +120,26 @@ class ExpertMode extends Component {
     event.preventDefault();
 
     const { selector } = event.target;
-    
+    const { selectedSet, db_type } = this.props.state;
+
     // задаем критерии поиска
-    this.props.post('_find', selector,
+    this.props.post('_find', JSON.parse(selector.value),
       response => {
         //if (response.status === 200) {
           const { data } = response;
           this.props.setState({
+            selectedSet,
+            db_type,
+            selector: selector.value,
             data
           });
         //}
       },
       error => {
         this.props.setState({
+          selectedSet,
+          db_type,
+          selector: selector.value,
           data: error
         });
       });
@@ -177,7 +199,7 @@ class ExpertMode extends Component {
           <br />
           <Textarea
             id="selector"
-            value={JSON.stringify(selector)}
+            value={selector}
             placeholder="Параметры отбора" />
           <div>
             <button className="mdc-button mdc-button--primary mdc-button--raised">
@@ -188,10 +210,7 @@ class ExpertMode extends Component {
         <br />
         {docs && docs.length > 0 && deleted === undefined &&
           <div>
-            Найдено документов: {docs.length}<br />
-            <br />
-            <DocsView
-              docs={docs} />
+            Найдено документов: {docs.length} {docs.length == 100 && <b>(есть еще, после прибивания, повторить операцию)</b>}<br />
             <br />
             {/*docs.length === 1 &&*/ allow &&
               <button
@@ -202,9 +221,13 @@ class ExpertMode extends Component {
             }
             {!allow &&
               <div>
-                <b>Нет прав на удаление документа.</b>
+                <b>Нет прав на удаление документов.</b>
               </div>
             }
+            <br />
+            <br />
+            <DocsView
+              docs={docs} />
           </div>
         }
         {docs && docs.length === 0 &&

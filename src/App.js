@@ -43,11 +43,23 @@ class App extends Component {
   }
 
   setCatClrsState = (state) => {
-    this.setState({ tabs: { catClrs: state }});
+    //this.setState({ tabs: { catClrs: state }});
+
+    this.setState((prevState, props) => {
+      prevState.tabs.catClrs = state;
+
+      return prevState;
+    });
   }
 
   setExpertModeState = (state) => {
-    this.setState({ tabs: { expertMode: state }});
+    //this.setState({ tabs: { expertMode: state }});
+
+    this.setState((prevState, props) => {
+      prevState.tabs.expertMode = state;
+
+      return prevState;
+    });
   }
 
   handleUnmount = () => {
