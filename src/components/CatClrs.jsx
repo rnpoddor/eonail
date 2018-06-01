@@ -1,14 +1,16 @@
 import React, { Component } from 'react';
+import Fade from '@material-ui/core/Fade';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 import Input from './Input';
 import withCouchDB from '../hoc/withCouchDB';
 import { DocsView, DocView } from './DocsView';
 
 class CatClrs extends Component {
-  /*state = {
-    clr_name: '',
-    data: {}
-  }*/
+  state = {
+    searching: false,
+    nailing: false
+  }
 
   componentDidMount = () => {
     const { apiUrl, dbName, couchDB: { address, db, area } } = this.props;
@@ -23,6 +25,9 @@ class CatClrs extends Component {
     event.preventDefault();
 
     const { clr_name } = event.target;
+
+    // показываем процесс поиска
+    this.setState({ searching: true });
     
     // задаем критерии поиска
     const data = {
@@ -33,52 +38,69 @@ class CatClrs extends Component {
         }
       }
     };
-    this.props.post('_find', data,
-      response => {
+    this.props.post('_find', data)
+      .then(response => {
         //if (response.status === 200) {
           const { data } = response;
           this.props.setState({
             clr_name: clr_name.value,
             data
           });
+          // скрываем процесс поиска
+          this.setState({ searching: false });
         //}
-      },
-      error => {
+      })
+      .catch(error => {
         this.props.setState({
           clr_name: clr_name.value,
           data: error
         });
+        // скрываем процесс поиска
+        this.setState({ searching: false });
       });
   }
 
   handleRemove = () => {
     const { data: { docs } } = this.props.state;
 
-    for (let i = 0; i < docs.length; i++) {
-      this.props.delete(`${docs[i]._id}?rev=${docs[i]._rev}`,
-        response => {
-          //if (response.status === 200) {
-            const { data } = response;
-            if (data.ok) {
-              
-            }
-          //}
-        },
-        error => {
-        });
+    // показываем процесс прибития
+    this.setState({ nailing: true });
+
+    let deleted = 0;
+    const funcThen = response => {
+      //if (response.status === 200) {
+        const { data } = response;
+        if (data.ok) {
+          deleted++;
+        }
+      //}
+    };
+    let promises = [];
+    for (var doc in docs) {
+      promises.push(this.props.delete(`${doc._id}?rev=${doc._rev}`)
+        .then(funcThen)
+        .catch(error => {
+        })
+      );
     }
 
-    this.props.setState({
-      data: {
-        docs,
-        deleted: docs.length
-      }
+    Promise.all(promises)
+    .then(results => {
+      this.props.setState({
+        data: {
+          docs,
+          deleted: deleted //docs.length
+        }
+      });
+      // скрываем процесс прибития
+      this.setState({ nailing: false });
     });
   }
 
   render() {
     const { couchDB: { roles } } = this.props;
     const { clr_name, data, data: { docs, deleted }} = this.props.state;
+    const { searching, nailing } = this.state;
 
     // проверяем права на редактирование
     const allow =
@@ -101,9 +123,19 @@ class CatClrs extends Component {
             value={clr_name}
             required={true} />
           <div>
-            <button className="mdc-button mdc-button--primary mdc-button--raised">
-              Найти
-            </button>
+            {searching ? (
+              <Fade
+                in={searching}
+                style={{ transitionDelay: searching ? '800ms' : '0ms' }}
+                unmountOnExit
+              >
+                <CircularProgress />
+              </Fade>
+            ) : (
+              <button className="mdc-button mdc-button--primary mdc-button--raised">
+                Найти
+              </button>
+            )}
           </div>
         </form>
         <br />
@@ -111,18 +143,27 @@ class CatClrs extends Component {
           <div>
             Найдено документов: {docs.length}<br />
             <br />
-            {/*docs.length === 1 &&*/ allow &&
-              <button
+            {allow ? (
+              nailing ? (
+                <Fade
+                  in={nailing}
+                  style={{ transitionDelay: nailing ? '800ms' : '0ms' }}
+                  unmountOnExit
+                >
+                  <CircularProgress />
+                </Fade>
+              ) : ( docs[0]._id && docs[0]._rev &&
+                <button
                   className="mdc-button mdc-button--primary mdc-button--raised"
                   onClick={this.handleRemove}>
                   Прибить
-              </button>
-            }
-            {!allow &&
+                </button>
+              )
+            ) : (
               <div>
                 <b>Нет прав на удаление документов.</b>
               </div>
-            }
+            )}
             <br />
             <br />
             <DocsView

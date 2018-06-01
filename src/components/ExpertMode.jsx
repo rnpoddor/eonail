@@ -1,12 +1,19 @@
 import React, { Component } from 'react';
 import Select from 'react-select';
 import 'react-select/dist/react-select.css';
+import Fade from '@material-ui/core/Fade';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 import Textarea from './Textarea';
 import withCouchDB from '../hoc/withCouchDB';
 import { DocsView, DocView } from './DocsView';
 
 class ExpertMode extends Component {
+  state = {
+    searching: false,
+    nailing: false
+  }
+
   componentDidMount = () => {
     const { apiUrl, dbName, couchDB, couchDB: { address }, getDBName, state: { selectedSet, db_type, data } } = this.props;
     const set = this.getSets(selectedSet);
@@ -28,7 +35,7 @@ class ExpertMode extends Component {
       { value: 'doc', label: 'Шаблон для doc' },
       { value: 'ram', label: 'Шаблон для ram' },
       { value: 'color', label: 'Цвет' },
-      { value: 'null_partner', label: 'Нулевой контрагент или не существует' }
+      { value: 'null_partner', label: 'Нулевой или не существующий контрагент' }
     ];
   }
 
@@ -122,9 +129,12 @@ class ExpertMode extends Component {
     const { selector } = event.target;
     const { selectedSet, db_type } = this.props.state;
 
+    // показываем процесс поиска
+    this.setState({ searching: true });
+
     // задаем критерии поиска
-    this.props.post('_find', JSON.parse(selector.value),
-      response => {
+    this.props.post('_find', JSON.parse(selector.value))
+      .then(response => {
         //if (response.status === 200) {
           const { data } = response;
           this.props.setState({
@@ -133,48 +143,65 @@ class ExpertMode extends Component {
             selector: selector.value,
             data
           });
+          // скрываем процесс поиска
+          this.setState({ searching: false });
         //}
-      },
-      error => {
+      })
+      .catch(error => {
         this.props.setState({
           selectedSet,
           db_type,
           selector: selector.value,
           data: error
         });
+        // скрываем процесс поиска
+        this.setState({ searching: false });
       });
   }
 
   handleRemove = () => {
     const { data: { docs } } = this.props.state;
 
-    for (let i = 0; i < docs.length; i++) {
-      if (docs[i]._id && docs[i]._rev) {
-        this.props.delete(`${docs[i]._id}?rev=${docs[i]._rev}`,
-          response => {
-            //if (response.status === 200) {
-              const { data } = response;
-              if (data.ok) {
-                
-              }
-            //}
-          },
-          error => {
-          });
+    // показываем процесс прибития
+    this.setState({ nailing: true });
+
+    let deleted = 0;
+    const funcThen = response => {
+      //if (response.status === 200) {
+        const { data } = response;
+        if (data.ok) {
+          deleted++;
+        }
+      //}
+    };
+    let promises = [];
+    for (var doc in docs) {
+      if (doc._id && doc._rev) {
+        promises.push(this.props.delete(`${doc._id}?rev=${doc._rev}`)
+          .then(funcThen)
+          .catch(error => {
+          })
+        );
       }
     }
 
-    this.props.setState({
-      data: {
-        docs,
-        deleted: docs.length
-      }
+    Promise.all(promises)
+    .then(results => {
+      this.props.setState({
+        data: {
+          docs,
+          deleted: deleted //docs.length
+        }
+      });
+      // скрываем процесс прибития
+      this.setState({ nailing: false });
     });
   }
 
   render() {
     const { couchDB: { roles } } = this.props;
     const { selectedSet, db_type, selector, data, data: { docs, deleted }} = this.props.state;
+    const { searching, nailing } = this.state;
 
     // проверяем права на редактирование
     const allow =
@@ -197,33 +224,53 @@ class ExpertMode extends Component {
             options={this.getSetOptions()} /><br />
           Тип базы данных: {db_type}<br />
           <br />
+          Для успешного прибития документов, поля "_id" и "_rev" должны присутствовать.<br />
           <Textarea
             id="selector"
             value={selector}
             placeholder="Параметры отбора" />
           <div>
-            <button className="mdc-button mdc-button--primary mdc-button--raised">
-              Найти
-            </button>
+            {searching ? (
+              <Fade
+                in={searching}
+                style={{ transitionDelay: searching ? '800ms' : '0ms' }}
+                unmountOnExit
+              >
+                <CircularProgress />
+              </Fade>
+            ) : (
+              <button className="mdc-button mdc-button--primary mdc-button--raised">
+                Найти
+              </button>
+            )}
           </div>
         </form>
         <br />
         {docs && docs.length > 0 && deleted === undefined &&
           <div>
-            Найдено документов: {docs.length} {docs.length == 100 && <b>(есть еще, после прибивания, повторить операцию)</b>}<br />
+            Найдено документов: {docs.length} {docs.length === 100 && <b>(есть еще, после прибития, повторить операцию поиска)</b>}<br />
             <br />
-            {/*docs.length === 1 &&*/ allow &&
-              <button
+            {allow ? (
+              nailing ? (
+                <Fade
+                  in={nailing}
+                  style={{ transitionDelay: nailing ? '800ms' : '0ms' }}
+                  unmountOnExit
+                >
+                  <CircularProgress />
+                </Fade>
+              ) : ( docs[0]._id && docs[0]._rev &&
+                <button
                   className="mdc-button mdc-button--primary mdc-button--raised"
                   onClick={this.handleRemove}>
                   Прибить
-              </button>
-            }
-            {!allow &&
+                </button>
+              )
+            ) : (
               <div>
                 <b>Нет прав на удаление документов.</b>
               </div>
-            }
+            )}
             <br />
             <br />
             <DocsView
@@ -237,12 +284,12 @@ class ExpertMode extends Component {
         }
         {deleted &&
           <div>
-            <b>Цвет "{docs[0].name}" успешно удален!</b>
+            <b>{deleted} документов из {docs.length} успешно удалены!</b>
           </div>
         }
         {deleted === 0 &&
           <div>
-            <b>Не удалось удалить цвет "{docs[0].name}".</b>
+            <b>Не удалось прибить документы.</b>
           </div>
         }
         {!docs && data &&

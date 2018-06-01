@@ -16,19 +16,19 @@ function withCouchDB(Component) {
       this.setState({ db });
     }
 
-    get = (id, cbOK, cbError) => {
+    get = id => {
       return axios.get(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
         .then(response => {
           console.log(response.data);
-          cbOK(response);
+          return Promise.resolve(response);
         })
         .catch(error => {
           console.log(error);
-          cbError(error);
+          return Promise.reject(error);
         });
     }
 
-    post = (id, data, cbOK, cbError) => {
+    post = (id, data) => {
       return axios.post(`${this.state.url}/${this.state.db}/${id}`, data, {
         // увеличиваем время ожидания запроса
         //timeout: 5000,
@@ -39,11 +39,11 @@ function withCouchDB(Component) {
       })
         .then(response => {
           console.log(response.data);
-          cbOK(response);
+          return Promise.resolve(response);
         })
         .catch(error => {
           console.log(error);
-          cbError(error);
+          return Promise.reject(error);
         });
     }
 
@@ -64,15 +64,15 @@ function withCouchDB(Component) {
         });*/
     }
 
-    delete = (id, cbOK, cbError) => {
+    delete = id => {
       return axios.delete(`${this.state.url}/${this.state.db}/${id}`, { withCredentials: true })
         .then(response => {
           console.log(response.data);
-          cbOK(response);
+          return Promise.resolve(response);
         })
         .catch(error => {
           console.log(error);
-          cbError(error);
+          return Promise.reject(error);
         });
     }
 

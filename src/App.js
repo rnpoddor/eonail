@@ -153,7 +153,19 @@ class App extends Component {
         if (response.status === 200 && response.data.ok) {
           this.setState({
             mounted: true,
-            logged: false
+            logged: false,
+            tabs: {
+              catClrs: {
+                clr_name: '',
+                data: {}
+              },
+              expertMode: {
+                selectedSet: 'doc',
+                db_type: 'doc',
+                selector: '',
+                data: {}
+              }
+            }
           });
         }
       });
