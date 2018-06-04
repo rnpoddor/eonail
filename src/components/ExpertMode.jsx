@@ -3,8 +3,8 @@ import Select from 'react-select';
 import 'react-select/dist/react-select.css';
 import Fade from '@material-ui/core/Fade';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import TextField from '@material-ui/core/TextField';
 
-import Textarea from './Textarea';
 import withCouchDB from '../hoc/withCouchDB';
 import { DocsView, DocView } from './DocsView';
 
@@ -127,19 +127,27 @@ class ExpertMode extends Component {
     event.preventDefault();
 
     const { selector } = event.target;
-    const { selectedSet, db_type } = this.props.state;
+
+    // проверка правильности ввода селектора
+    try {
+      var json = JSON.parse(selector.value);
+    } catch (e) {
+      this.setState({ badSelector: true });
+      return;
+    }
 
     // показываем процесс поиска
-    this.setState({ searching: true });
+    this.setState({
+      searching: true,
+      badSelector: false
+    });
 
     // задаем критерии поиска
-    this.props.post('_find', JSON.parse(selector.value))
+    this.props.post('_find', json)
       .then(response => {
         //if (response.status === 200) {
           const { data } = response;
           this.props.setState({
-            selectedSet,
-            db_type,
             selector: selector.value,
             data
           });
@@ -149,8 +157,6 @@ class ExpertMode extends Component {
       })
       .catch(error => {
         this.props.setState({
-          selectedSet,
-          db_type,
           selector: selector.value,
           data: error
         });
@@ -198,10 +204,16 @@ class ExpertMode extends Component {
     });
   }
 
+  handleChange = name => event => {
+    this.props.setState({
+      [name]: event.target.value,
+    });
+  };
+
   render() {
     const { couchDB: { roles } } = this.props;
     const { selectedSet, db_type, selector, data, data: { docs, deleted }} = this.props.state;
-    const { searching, nailing } = this.state;
+    const { searching, nailing, badSelector } = this.state;
 
     // проверяем права на редактирование
     const allow =
@@ -224,11 +236,18 @@ class ExpertMode extends Component {
             options={this.getSetOptions()} /><br />
           Тип базы данных: {db_type}<br />
           <br />
-          Для успешного прибития документов, поля "_id" и "_rev" должны присутствовать.<br />
-          <Textarea
+          <div className="App-comments">
+            Для успешного прибития документов, поля "_id" и "_rev" должны присутствовать в параметрах отбора.
+          </div>
+          <TextField
             id="selector"
+            label="Параметры отбора"
+            className="mdc-textfield__textarea"
             value={selector}
-            placeholder="Параметры отбора" />
+            onChange={this.handleChange('selector')}
+            margin="normal"
+            multiline
+          />
           <div>
             {searching ? (
               <Fade
@@ -246,6 +265,12 @@ class ExpertMode extends Component {
           </div>
         </form>
         <br />
+        {badSelector &&
+          <div className="App-error">
+            <b>Ошибка в параметрах отбора!</b>
+          </div>
+        }
+        {badSelector && <br />}
         {docs && docs.length > 0 && deleted === undefined &&
           <div>
             Найдено документов: {docs.length} {docs.length === 100 && <b>(есть еще, после прибития, повторить операцию поиска)</b>}<br />

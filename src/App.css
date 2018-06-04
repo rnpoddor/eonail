@@ -44,6 +44,14 @@
   text-align: center;
 }
 
+.App-error {
+  color: red;
+}
+
+.App-comments {
+  color: gray;
+}
+
 /*
  * CouchDBLogin
  */
@@ -69,7 +77,7 @@
 
 .mdc-textfield__textarea {
   width: 750px;
-  height: 150px;
+  /*height: 150px;*/
 }
 
 .mdc-button {
