@@ -181,9 +181,9 @@ class ExpertMode extends Component {
       //}
     };
     let promises = [];
-    for (var doc in docs) {
-      if (doc._id && doc._rev) {
-        promises.push(this.props.delete(`${doc._id}?rev=${doc._rev}`)
+    for (var i = 0; i < docs.length; i++) {
+      if (docs[i]._id && docs[i]._rev) {
+        promises.push(this.props.delete(`${docs[i]._id}?rev=${docs[i]._rev}`)
           .then(funcThen)
           .catch(error => {
           })
