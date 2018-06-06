@@ -35,6 +35,7 @@ class ExpertMode extends Component {
       { value: 'doc', label: 'Шаблон для doc' },
       { value: 'ram', label: 'Шаблон для ram' },
       { value: 'color', label: 'Цвет' },
+      { value: 'order', label: 'Заказ' },
       { value: 'null_partner', label: 'Нулевой или не существующий контрагент' }
     ];
   }
@@ -77,6 +78,18 @@ class ExpertMode extends Component {
       "$eq": ""
     }
   }
+}`
+      },
+      order: {
+        type: 'doc',
+        selector: `{
+  "selector": {
+    "class_name": "doc.calc_order",
+    "number_doc": {
+      "$eq": ""
+    }
+  },
+  "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"]
 }`
       },
       null_partner: {
@@ -218,7 +231,7 @@ class ExpertMode extends Component {
     // проверяем права на редактирование
     const allow =
       roles.indexOf("_admin") !== -1 ||
-      roles.indexOf("ram_editor") !== -1;
+      roles.indexOf(db_type + "_editor") !== -1;
 
     return (
       <div>

@@ -11,7 +11,7 @@ class CouchDBLogin extends Component {
     
     render() {
         const { onLogin, couchDB } = this.props;
-        const { login, address, db, area, postfix } = couchDB;
+        const { login, address, db, area, prefix } = couchDB;
 
         return (
             <div>
@@ -49,10 +49,10 @@ class CouchDBLogin extends Component {
                         required={true} />
 
                     <Input
-                        id="postfix"
+                        id="prefix"
                         type="text"
-                        placeholder="Постфикс"
-                        value={postfix}
+                        placeholder="Префикс"
+                        value={prefix}
                         required={false} />
 
                     <button className="mdc-button mdc-button--primary mdc-button--raised">

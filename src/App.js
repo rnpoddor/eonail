@@ -7,6 +7,7 @@ import './App.css';
 import CouchDBLogin from './components/CouchDBLogin';
 import { Tabs, Pane } from './components/Tabs';
 import CatClrs from './components/CatClrs';
+import DocCalcOrder from './components/DocCalcOrder';
 import ExpertMode from './components/ExpertMode';
 
 class App extends Component {
@@ -17,7 +18,7 @@ class App extends Component {
       address: 'https://zakaz.ecookna.ru/couchdb',
       db: 'wb_',
       area: '21',
-      postfix: '',
+      prefix: '',
       roles: ''
     },
     mounted: true,
@@ -25,6 +26,10 @@ class App extends Component {
     tabs: {
       catClrs: {
         clr_name: '',
+        data: {}
+      },
+      docCalcOrder: {
+        number_doc: '',
         data: {}
       },
       expertMode: {
@@ -37,9 +42,9 @@ class App extends Component {
   }
 
   getDBName = (couchDB, type) => {
-    const { db, area, postfix } = couchDB;
+    const { db, area, prefix } = couchDB;
 
-    return db + area + '_' + type + (postfix ? ('_' + postfix) : '');
+    return db + area + '_' + type + (prefix ? ('_' + prefix) : '');
   }
 
   setCatClrsState = (state) => {
@@ -47,6 +52,16 @@ class App extends Component {
 
     this.setState((prevState, props) => {
       prevState.tabs.catClrs = Object.assign(prevState.tabs.catClrs, state);
+
+      return prevState;
+    });
+  }
+
+  setDocCalcOrderState = (state) => {
+    //this.setState({ tabs: { docCalcOrder: state }});
+
+    this.setState((prevState, props) => {
+      prevState.tabs.docCalcOrder = Object.assign(prevState.tabs.docCalcOrder, state);
 
       return prevState;
     });
@@ -84,7 +99,7 @@ class App extends Component {
     // предотвращаем передачу данных формой на сервер
     event.preventDefault();
 
-    const { login, password, address, area, postfix } = event.target;
+    const { login, password, address, area, prefix } = event.target;
 
     // выдергиваем название базы
     const reg_db_name = address.value.match(/\w+$/i);
@@ -96,7 +111,7 @@ class App extends Component {
       address: addr,
       db: reg_db_name[0],
       area: area.value,
-      postfix: postfix.value
+      prefix: prefix.value
     };
 
     // настройка запроса
@@ -159,6 +174,10 @@ class App extends Component {
                 clr_name: '',
                 data: {}
               },
+              docCalcOrder: {
+                number_doc: '',
+                data: {}
+              },
               expertMode: {
                 selectedSet: 'doc',
                 db_type: 'doc',
@@ -172,7 +191,7 @@ class App extends Component {
   }
 
   render() {
-    const { couchDB: { db, area, postfix } } = this.state;
+    const { couchDB: { db, area, prefix } } = this.state;
 
     return (
       <div className="App">
@@ -182,7 +201,7 @@ class App extends Component {
           <div className="App-info">
           {this.state.logged &&
             <div>
-              {this.state.couchDB.address + '/' + db + area + (postfix ? (' (' + postfix + ')') : '')}<br />
+              {this.state.couchDB.address + '/' + db + area + (prefix ? (' (' + prefix + ')') : '')}<br />
               {this.state.couchDB.login} (<a href="#ВЫХОД" onClick={this.handleLogout}>ВЫХОД</a>)
             </div>
           }
@@ -213,6 +232,13 @@ class App extends Component {
                 getDBName={this.getDBName}
                 state={this.state.tabs.catClrs}
                 setState={this.setCatClrsState} />
+            </Pane>
+            <Pane label="Заказ">
+              <DocCalcOrder
+                couchDB={this.state.couchDB}
+                getDBName={this.getDBName}
+                state={this.state.tabs.docCalcOrder}
+                setState={this.setDocCalcOrderState} />
             </Pane>
             <Pane label="Режим эксперта">
               <ExpertMode
