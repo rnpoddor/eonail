@@ -17,6 +17,7 @@ function Row({ name, value, bgcolor }) {
 class DocView extends Component {
   render() {
       const { doc } = this.props;
+      const deleted = doc && doc.deleted;
 
       let rows = [];
       for (let key in doc) {
@@ -31,7 +32,7 @@ class DocView extends Component {
       }
 
       return (
-        <table>
+        <table style={{backgroundColor: deleted ? "red" : "white"}}>
           <tbody>
             {rows}
           </tbody>
@@ -50,7 +51,7 @@ export default class DocsView extends Component {
         {
           docs.map(function (doc) {
             return <div key={doc._id}>
-              <b>#{num++}</b>
+              <b>#{num++}</b> {doc.deleted && <b>- ПРИБИТ</b>}
               <DocView
                 doc={doc} />
             </div>;

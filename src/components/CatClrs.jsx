@@ -12,7 +12,7 @@ class CatClrs extends Component {
     nailing: false
   }
 
-  componentDidMount = () => {
+  componentWillMount = () => {
     const { apiUrl, dbName, couchDB: { address, db, area } } = this.props;
 
     // задаем URI с нужной базой
@@ -34,7 +34,7 @@ class CatClrs extends Component {
       "selector": {
         "class_name": "cat.clrs",
         "name": {
-          "$eq": clr_name.value
+          "$regex": clr_name.value
         }
       }
     };
@@ -127,11 +127,13 @@ class CatClrs extends Component {
               <Fade
                 in={searching}
                 style={{ transitionDelay: searching ? '800ms' : '0ms' }}
-                unmountOnExit
-              >
+                unmountOnExit>
                 <CircularProgress />
               </Fade>
-            ) : (
+            ) : (nailing ?
+              <button className="mdc-button mdc-button--primary mdc-button--raised" disabled>
+                Найти
+              </button> :
               <button className="mdc-button mdc-button--primary mdc-button--raised">
                 Найти
               </button>
@@ -148,8 +150,7 @@ class CatClrs extends Component {
                 <Fade
                   in={nailing}
                   style={{ transitionDelay: nailing ? '800ms' : '0ms' }}
-                  unmountOnExit
-                >
+                  unmountOnExit>
                   <CircularProgress />
                 </Fade>
               ) : ( docs[0]._id && docs[0]._rev &&
@@ -161,7 +162,7 @@ class CatClrs extends Component {
               )
             ) : (
               <div>
-                <b>Нет прав на удаление документов.</b>
+                <b>Нет прав на прибитие документов.</b>
               </div>
             )}
             <br />
@@ -177,17 +178,19 @@ class CatClrs extends Component {
         }
         {deleted &&
           <div>
-            <b>Цвет "{docs[0].name}" успешно удален!</b>
+            <b>Цвет "{docs[0].name}" успешно прибит!</b>
           </div>
         }
         {deleted === 0 &&
           <div>
-            <b>Не удалось удалить цвет "{docs[0].name}".</b>
+            <b>Не удалось прибить цвет "{docs[0].name}".</b>
           </div>
         }
-        {!docs && data &&
+        {!docs && data.message &&
           <DocView
-            doc={data} />
+            doc={data.response ? data.response.data : {
+              error: data.message
+            }} />
         }
       </div>
     );

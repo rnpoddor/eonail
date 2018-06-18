@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Select from 'react-select';
 import 'react-select/dist/react-select.css';
+import { withStyles } from '@material-ui/core/styles';
 import Fade from '@material-ui/core/Fade';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import TextField from '@material-ui/core/TextField';
@@ -8,13 +9,21 @@ import TextField from '@material-ui/core/TextField';
 import withCouchDB from '../hoc/withCouchDB';
 import { DocsView, DocView } from './DocsView';
 
+const styles = theme => ({
+  textField: {
+    marginLeft: theme.spacing.unit,
+    marginRight: theme.spacing.unit,
+    width: 300,
+  }
+});
+
 class ExpertMode extends Component {
   state = {
     searching: false,
     nailing: false
   }
 
-  componentDidMount = () => {
+  componentWillMount = () => {
     const { apiUrl, dbName, couchDB, couchDB: { address }, getDBName, state: { selectedSet, db_type, data } } = this.props;
     const set = this.getSets(selectedSet);
 
@@ -50,7 +59,7 @@ class ExpertMode extends Component {
       "$eq": "doc.calc_order"
     },
     "number_doc": {
-      "$eq": ""
+      "$regex": ""
     }
   },
   "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"],
@@ -62,7 +71,7 @@ class ExpertMode extends Component {
         selector: `{
   "selector": {
     "name": {
-      "$eq": ""
+      "$regex": ""
     }
   },
   "fields": ["_id", "_rev", "name", "timestamp"],
@@ -75,7 +84,7 @@ class ExpertMode extends Component {
   "selector": {
     "class_name": "cat.clrs",
     "name": {
-      "$eq": ""
+      "$regex": ""
     }
   }
 }`
@@ -86,7 +95,7 @@ class ExpertMode extends Component {
   "selector": {
     "class_name": "doc.calc_order",
     "number_doc": {
-      "$eq": ""
+      "$regex": ""
     }
   },
   "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"]
@@ -121,19 +130,19 @@ class ExpertMode extends Component {
   handleChangeSet = (selectedSet) => {
     if (selectedSet) {
       const { value } = selectedSet;
-      const set = this.getSets(value);
-      //const { dbName, couchDB, getDBName, state: { db_type } } = this.props;
+      const { type, selector } = this.getSets(value);
+      const { dbName, couchDB, getDBName } = this.props;
 
-      //dbName(getDBName(couchDB, db_type));
+      dbName(getDBName(couchDB, type));
 
       this.props.setState({
         selectedSet: value,
-        db_type: set.type,
-        selector: set.selector,
+        db_type: type,
+        selector: selector,
         data: {}
       });
     }
-  };
+  }
 
   handleSubmit = event => {
     // предотвращаем передачу данных формой на сервер
@@ -178,7 +187,31 @@ class ExpertMode extends Component {
       });
   }
 
-  handleRemove = () => {
+  /*handleRemove = () => {
+    //this.asyncRemove();
+    this.syncRemove();
+  }*/
+
+  handleRemove = event => {
+    // предотвращаем передачу данных формой на сервер
+    event.preventDefault();
+
+    const { delay } = event.target;
+
+    this.setState({
+      delay: delay.value
+    });
+
+    //this.asyncRemove();
+    this.syncRemove();
+  }
+
+  stopRemove = () => {
+    // скрываем процесс прибития
+    this.setState({ nailing: false });
+  }
+
+  asyncRemove = () => {
     const { data: { docs } } = this.props.state;
 
     // показываем процесс прибития
@@ -198,8 +231,7 @@ class ExpertMode extends Component {
       if (docs[i]._id && docs[i]._rev) {
         promises.push(this.props.delete(`${docs[i]._id}?rev=${docs[i]._rev}`)
           .then(funcThen)
-          .catch(error => {
-          })
+          .catch(error => {})
         );
       }
     }
@@ -217,6 +249,53 @@ class ExpertMode extends Component {
     });
   }
 
+  tickRemove = async () => {
+    const { data: { docs } } = this.props.state;
+    const { nailing, delay } = this.state;
+
+    let found = false;
+    for (var i = 0; i < docs.length; i++) {
+      if (docs[i]._id && docs[i]._rev && !docs[i].deleted) {
+        const { data: { ok } } = await this.props.delete(`${docs[i]._id}?rev=${docs[i]._rev}`);
+        if (ok) {
+          docs[i].deleted = true;
+        }
+        found = true;
+        break;
+      }
+    }
+
+    if (nailing && found) {
+      this.props.setState({
+        data: {
+          docs
+        }
+      });
+
+      setTimeout(this.tickRemove, delay);
+    }
+    else {
+      const filtered = docs.filter(value => value.deleted);
+      this.props.setState({
+        data: {
+          docs,
+          deleted: filtered.length //docs.length
+        }
+      });
+      // скрываем процесс прибития
+      this.setState({ nailing: false });
+    }
+  }
+
+  syncRemove = () => {
+    const { delay } = this.props.state;
+
+    // показываем процесс прибития
+    this.setState({ nailing: true });
+
+    setTimeout(this.tickRemove, delay);
+  }
+
   handleChange = name => event => {
     this.props.setState({
       [name]: event.target.value,
@@ -224,8 +303,8 @@ class ExpertMode extends Component {
   };
 
   render() {
-    const { couchDB: { roles } } = this.props;
-    const { selectedSet, db_type, selector, data, data: { docs, deleted }} = this.props.state;
+    const { classes, couchDB: { roles } } = this.props;
+    const { selectedSet, db_type, selector, delay, data, data: { docs, deleted }} = this.props.state;
     const { searching, nailing, badSelector } = this.state;
 
     // проверяем права на редактирование
@@ -266,11 +345,13 @@ class ExpertMode extends Component {
               <Fade
                 in={searching}
                 style={{ transitionDelay: searching ? '800ms' : '0ms' }}
-                unmountOnExit
-              >
+                unmountOnExit>
                 <CircularProgress />
               </Fade>
-            ) : (
+            ) : (nailing ?
+              <button className="mdc-button mdc-button--primary mdc-button--raised" disabled>
+                Найти
+              </button> :
               <button className="mdc-button mdc-button--primary mdc-button--raised">
                 Найти
               </button>
@@ -286,31 +367,51 @@ class ExpertMode extends Component {
         {badSelector && <br />}
         {docs && docs.length > 0 && deleted === undefined &&
           <div>
-            Найдено документов: {docs.length} {docs.length === 100 && <b>(есть еще, после прибития, повторить операцию поиска)</b>}<br />
+            Найдено документов: {docs.length} {docs.length > 0 && <b>(могут быть еще, после прибития, повторить операцию поиска)</b>}<br />
             <br />
             {allow ? (
               nailing ? (
-                <Fade
-                  in={nailing}
-                  style={{ transitionDelay: nailing ? '800ms' : '0ms' }}
-                  unmountOnExit
-                >
-                  <CircularProgress />
-                </Fade>
+                <div>
+                  <Fade
+                    in={nailing}
+                    style={{ transitionDelay: nailing ? '800ms' : '0ms' }}
+                    unmountOnExit>
+                    <div>
+                      <CircularProgress />
+                      <br />
+                      <button
+                        className="mdc-button mdc-button--primary mdc-button--raised"
+                        onClick={this.stopRemove}>
+                        Остановить
+                      </button>
+                    </div>
+                  </Fade>
+                </div>
               ) : ( docs[0]._id && docs[0]._rev &&
-                <button
-                  className="mdc-button mdc-button--primary mdc-button--raised"
-                  onClick={this.handleRemove}>
-                  Прибить
-                </button>
+                <form onSubmit={this.handleRemove}>
+                  <TextField
+                    id="delay"
+                    label="Задержка между прибитиями (мс)"
+                    className={classes.textField}
+                    value={delay}
+                    onChange={this.handleChange('delay')}
+                    type="number"
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    margin="normal"
+                  />
+                  <br />
+                  <button
+                    className="mdc-button mdc-button--primary mdc-button--raised">
+                    Прибить
+                  </button>
+                </form>
               )
             ) : (
-              <div>
-                <b>Нет прав на удаление документов.</b>
-              </div>
+              <b>Нет прав на прибитие документов.</b>
             )}
-            <br />
-            <br />
+            <br /><br />
             <DocsView
               docs={docs} />
           </div>
@@ -322,7 +423,7 @@ class ExpertMode extends Component {
         }
         {deleted &&
           <div>
-            <b>{deleted} документов из {docs.length} успешно удалены!</b>
+            <b>{deleted} документов из {docs.length} успешно прибиты!</b>
           </div>
         }
         {deleted === 0 &&
@@ -330,13 +431,15 @@ class ExpertMode extends Component {
             <b>Не удалось прибить документы.</b>
           </div>
         }
-        {!docs && data &&
+        {!docs && data.message &&
           <DocView
-            doc={data} />
+            doc={data.response ? data.response.data : {
+              error: data.message
+            }} />
         }
       </div>
     );
   }
 }
 
-export default withCouchDB(ExpertMode);
+export default withCouchDB(withStyles(styles)(ExpertMode));

@@ -12,7 +12,7 @@ class DocCalcOrder extends Component {
     nailing: false
   }
 
-  componentDidMount = () => {
+  componentWillMount = () => {
     const { apiUrl, dbName, couchDB, couchDB: { address }, getDBName } = this.props;
 
     // задаем URI с нужной базой
@@ -34,7 +34,7 @@ class DocCalcOrder extends Component {
       "selector": {
         "class_name": "doc.calc_order",
         "number_doc": {
-          "$eq": number_doc.value
+          "$regex": number_doc.value
         }
       },
       "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"]
@@ -128,11 +128,13 @@ class DocCalcOrder extends Component {
               <Fade
                 in={searching}
                 style={{ transitionDelay: searching ? '800ms' : '0ms' }}
-                unmountOnExit
-              >
+                unmountOnExit>
                 <CircularProgress />
               </Fade>
-            ) : (
+            ) : (nailing ?
+              <button className="mdc-button mdc-button--primary mdc-button--raised" disabled>
+                Найти
+              </button> :
               <button className="mdc-button mdc-button--primary mdc-button--raised">
                 Найти
               </button>
@@ -149,8 +151,7 @@ class DocCalcOrder extends Component {
                 <Fade
                   in={nailing}
                   style={{ transitionDelay: nailing ? '800ms' : '0ms' }}
-                  unmountOnExit
-                >
+                  unmountOnExit>
                   <CircularProgress />
                 </Fade>
               ) : ( docs[0]._id && docs[0]._rev &&
@@ -162,7 +163,7 @@ class DocCalcOrder extends Component {
               )
             ) : (
               <div>
-                <b>Нет прав на удаление документов.</b>
+                <b>Нет прав на прибитие документов.</b>
               </div>
             )}
             <br />
@@ -178,17 +179,19 @@ class DocCalcOrder extends Component {
         }
         {deleted &&
           <div>
-            <b>Заказ "{docs[0].name}" успешно удален!</b>
+            <b>Заказ "{docs[0].name}" успешно прибит!</b>
           </div>
         }
         {deleted === 0 &&
           <div>
-            <b>Не удалось удалить заказ "{docs[0].name}".</b>
+            <b>Не удалось прибить заказ "{docs[0].name}".</b>
           </div>
         }
-        {!docs && data &&
+        {!docs && data.message &&
           <DocView
-            doc={data} />
+            doc={data.response ? data.response.data : {
+              error: data.message
+            }} />
         }
       </div>
     );

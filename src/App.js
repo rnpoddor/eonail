@@ -6,24 +6,33 @@ import './App.css';
 
 import CouchDBLogin from './components/CouchDBLogin';
 import { Tabs, Pane } from './components/Tabs';
+import { DocView } from './components/DocsView';
 import CatClrs from './components/CatClrs';
 import DocCalcOrder from './components/DocCalcOrder';
 import ExpertMode from './components/ExpertMode';
 
 class App extends Component {
-  state = {
-    couchDB: {
-      login: '',
-      password: '',
-      address: 'https://zakaz.ecookna.ru/couchdb',
-      db: 'wb_',
-      area: '21',
-      prefix: '',
-      roles: ''
-    },
-    mounted: true,
-    logged: false,
-    tabs: {
+  constructor(props) {
+    super(props);
+    // Don't call this.setState() here!
+    this.state = {
+      couchDB: {
+        login: '',
+        password: '',
+        address: 'https://zakaz.ecookna.ru/couchdb',
+        db: 'wb_',
+        area: '21',
+        prefix: '',
+        roles: ''
+      },
+      mounted: true,
+      logged: false,
+      tabs: this.getDefaultTabsState()
+    };
+  }
+
+  getDefaultTabsState = function() {
+    return {
       catClrs: {
         clr_name: '',
         data: {}
@@ -36,9 +45,10 @@ class App extends Component {
         selectedSet: 'doc',
         db_type: 'doc',
         selector: '',
+        delay: 2000,
         data: {}
       }
-    }
+    };
   }
 
   getDBName = (couchDB, type) => {
@@ -146,7 +156,10 @@ class App extends Component {
           // меняем состояние
           this.setState({
             couchDB,
-            logged
+            logged,
+            response: {
+              error: 'bad DB input!'
+            }
           });
         }
       })
@@ -154,7 +167,10 @@ class App extends Component {
         console.log(error);
         this.setState({
           couchDB,
-          logged: false
+          logged: false,
+          response: error.response ? error.response.data : {
+            error: error.message
+          }
         });
       });
   }
@@ -169,22 +185,8 @@ class App extends Component {
           this.setState({
             mounted: true,
             logged: false,
-            tabs: {
-              catClrs: {
-                clr_name: '',
-                data: {}
-              },
-              docCalcOrder: {
-                number_doc: '',
-                data: {}
-              },
-              expertMode: {
-                selectedSet: 'doc',
-                db_type: 'doc',
-                selector: '',
-                data: {}
-              }
-            }
+            response: undefined,
+            tabs: this.getDefaultTabsState()
           });
         }
       });
@@ -216,10 +218,14 @@ class App extends Component {
               transitionEnter={false}
               transitionLeaveTimeout={300}>
               {!this.state.logged &&
-                <CouchDBLogin
-                  onUnmount={this.handleUnmount}
-                  onLogin={this.handleLogin}
-                  couchDB={this.state.couchDB} />
+                <div>
+                  <CouchDBLogin
+                    onUnmount={this.handleUnmount}
+                    onLogin={this.handleLogin}
+                    couchDB={this.state.couchDB} />
+                  <DocView
+                    doc={this.state.response} />
+                </div>
               }
             </CSSTransitionGroup>
           </div>
