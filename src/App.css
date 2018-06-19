@@ -2,37 +2,6 @@
   text-align: left;
 }
 
-.App-header {
-  background-color: #222;
-  height: 50px;
-  padding: 5px;
-  color: white;
-  text-align: center;
-}
-
-.App-logo {
-  /*animation: App-logo-spin infinite 20s linear;*/
-  height: 50px;
-  /*float: left;*/
-  left: 5px;
-  position: absolute;
-}
-
-.App-title {
-  font-size: 1.8em;
-  margin: 10px auto;
-}
-
-.App-info {
-  font-size: 1.1em;
-  position: absolute;
-  right: 5px;
-  top: 0px;
-  height: 60px;
-  text-align: right;
-  line-height: 1.7em;
-}
-
 /*@keyframes App-logo-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -42,47 +11,6 @@
   display: flex;
   justify-content: center;
   text-align: center;
-}
-
-.App-error {
-  color: red;
-}
-
-.App-comments {
-  color: gray;
-}
-
-/*
- * CouchDBLogin
- */
-
-.couLogin-title {
-  padding: 20px;
-}
-
-.couLogin-form {
-  padding: 20px;
-  width: 600px;
-  display: flex;
-  flex-direction: column;
-}
-
-.mdc-textfield {
-  margin-bottom: 1em;
-}
-
-.mdc-textfield__input {
-  width: 100%;
-}
-
-.mdc-textfield__textarea {
-  width: 750px;
-  /*height: 150px;*/
-}
-
-.mdc-button {
-  margin-left: auto;
-  margin-right: 0;
 }
 
 /*
@@ -112,44 +40,6 @@
 }
 
 /*
- * Tabs
- */
-
-.tabs {
-  margin: 0px;
-  background: #fff;
-  border: 0px solid #e5e5e5;
-  /*border-radius: 3px;*/
-}
-
-.tabs__labels {
-  margin: 0;
-  padding: 0;
-  background: rgb(68, 68, 68);
-}
-
-.tabs__labels li {
-  display: inline-block;
-}
-
-.tabs__labels li a {
-  padding: 8px 12px;
-  display: block;
-  color: #fff;
-  text-decoration: none;
-  border-bottom: 2px solid rgb(68, 68, 68);
-}
-
-.tabs__labels li a.active {
-  background: #337ab7;
-  border-bottom-color: #337ab7;
-}
-
-.tabs__content {
-  padding: 25px;
-}
-
-/*
  * Tabs content
  */
 
@@ -162,4 +52,24 @@
   width: 400px;
   display: flex;
   flex-direction: column;
+}
+
+/*
+ * DayPicker content
+ */
+
+.Selectable .DayPicker-Day--selected:not(.DayPicker-Day--start):not(.DayPicker-Day--end):not(.DayPicker-Day--outside) {
+  background-color: #f0f8ff !important;
+  color: #4a90e2;
+}
+.Selectable .DayPicker-Day {
+  border-radius: 0 !important;
+}
+.Selectable .DayPicker-Day--start {
+  border-top-left-radius: 50% !important;
+  border-bottom-left-radius: 50% !important;
+}
+.Selectable .DayPicker-Day--end {
+  border-top-right-radius: 50% !important;
+  border-bottom-right-radius: 50% !important;
 }

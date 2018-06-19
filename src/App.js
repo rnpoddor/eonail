@@ -1,15 +1,59 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import { withStyles } from '@material-ui/core/styles';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
+import Typography from '@material-ui/core/Typography';
+import Button from '@material-ui/core/Button';
 import axios from 'axios';
 import CSSTransitionGroup from 'react-transition-group/CSSTransitionGroup';
 import logo from './logo.png';
 import './App.css';
 
 import CouchDBLogin from './components/CouchDBLogin';
-import { Tabs, Pane } from './components/Tabs';
 import { DocView } from './components/DocsView';
 import CatClrs from './components/CatClrs';
 import DocCalcOrder from './components/DocCalcOrder';
 import ExpertMode from './components/ExpertMode';
+
+const styles = theme => ({
+  root: {
+    flexGrow: 1,
+    width: '100%',
+    backgroundColor: theme.palette.background.paper,
+  },
+  logo: {
+    marginLeft: 0,
+    marginRight: 20,
+  },
+  imageLogo: {
+    height: 50,
+  },
+  title: {
+    fontSize: '1.8em',
+    flex: 1,
+  },
+  info: {
+    fontSize: '1.0em',
+  },
+  buttonLogout: {
+    marginLeft: 10,
+  },
+});
+
+function TabContainer(props) {
+  return (
+    <Typography component="div" style={{ padding: 8 * 3 }}>
+      {props.children}
+    </Typography>
+  );
+}
+
+TabContainer.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 class App extends Component {
   constructor(props) {
@@ -27,7 +71,8 @@ class App extends Component {
       },
       mounted: true,
       logged: false,
-      tabs: this.getDefaultTabsState()
+      tabs: this.getDefaultTabsState(),
+      tab: 0
     };
   }
 
@@ -192,24 +237,40 @@ class App extends Component {
       });
   }
 
+  handleTabChange = (event, tab) => {
+    this.setState({ tab });
+  };
+
   render() {
-    const { couchDB: { db, area, prefix } } = this.state;
+    const { classes } = this.props;
+    const { couchDB, couchDB: { login, address, db, area, prefix }, mounted, logged, tab } = this.state;
 
     return (
       <div className="App">
-        <header className="App-header">
-          <a href="https://www.ecookna.ru"><img src={logo} className="App-logo" alt="logo" /></a>
-          <h1 className="App-title">Прибить</h1>
-          <div className="App-info">
-          {this.state.logged &&
-            <div>
-              {this.state.couchDB.address + '/' + db + area + (prefix ? (' (' + prefix + ')') : '')}<br />
-              {this.state.couchDB.login} (<a href="#ВЫХОД" onClick={this.handleLogout}>ВЫХОД</a>)
-            </div>
-          }
-          </div>
+        <header className={classes.root}>
+          <AppBar position="static">
+            <Toolbar>
+              <div className={classes.logo}>
+                <a href="https://www.ecookna.ru">
+                  <img src={logo} className={classes.imageLogo} alt="logo" />
+                </a>
+              </div>
+              <Typography variant="title" color="inherit" className={classes.title}>
+                Прибить
+              </Typography>
+              {logged &&
+                <Typography variant="title" color="inherit" className={classes.info}>
+                  {address + '/' + db + area + '_[тип]' + (prefix ? ('_' + prefix) : '')}<br />
+                  {login}
+                </Typography>
+              }
+              {logged &&
+                <Button color="inherit" variant="raised" className={classes.buttonLogout} onClick={this.handleLogout}>ВЫХОД</Button>
+              }
+            </Toolbar>
+          </AppBar>
         </header>
-        {this.state.mounted &&
+        {mounted &&
           <div className="App-couLogin">
             <CSSTransitionGroup
               transitionName="fade"
@@ -217,12 +278,13 @@ class App extends Component {
               transitionAppearTimeout={500}
               transitionEnter={false}
               transitionLeaveTimeout={300}>
-              {!this.state.logged &&
+              {!logged &&
                 <div>
                   <CouchDBLogin
                     onUnmount={this.handleUnmount}
                     onLogin={this.handleLogin}
-                    couchDB={this.state.couchDB} />
+                    couchDB={couchDB} />
+                  <br />
                   <DocView
                     doc={this.state.response} />
                 </div>
@@ -230,34 +292,48 @@ class App extends Component {
             </CSSTransitionGroup>
           </div>
         }
-        {!this.state.mounted && this.state.logged &&
-          <Tabs selected={0}>
-            <Pane label="Цвет">
+        {!mounted && logged &&
+          <div>
+            <AppBar position="static" color="default">
+              <Tabs
+                value={tab}
+                onChange={this.handleTabChange}
+                indicatorColor="primary"
+                textColor="primary"
+                scrollable
+                scrollButtons="auto"
+              >
+                <Tab label="Цвет" />
+                <Tab label="Заказ" />
+                <Tab label="Режим эксперта" />
+              </Tabs>
+            </AppBar>
+            {tab === 0 && <TabContainer>
               <CatClrs
-                couchDB={this.state.couchDB}
+                couchDB={couchDB}
                 getDBName={this.getDBName}
                 state={this.state.tabs.catClrs}
                 setState={this.setCatClrsState} />
-            </Pane>
-            <Pane label="Заказ">
+            </TabContainer>}
+            {tab === 1 && <TabContainer>
               <DocCalcOrder
-                couchDB={this.state.couchDB}
+                couchDB={couchDB}
                 getDBName={this.getDBName}
                 state={this.state.tabs.docCalcOrder}
                 setState={this.setDocCalcOrderState} />
-            </Pane>
-            <Pane label="Режим эксперта">
+            </TabContainer>}
+            {tab === 2 && <TabContainer>
               <ExpertMode
-                couchDB={this.state.couchDB}
+                couchDB={couchDB}
                 getDBName={this.getDBName}
                 state={this.state.tabs.expertMode}
                 setState={this.setExpertModeState} />
-            </Pane>
-          </Tabs>
+            </TabContainer>}
+          </div>
         }
       </div>
     );
   }
 }
 
-export default App;
+export default withStyles(styles)(App);

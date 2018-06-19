@@ -1,26 +1,54 @@
 import React, { Component } from 'react';
-import Select from 'react-select';
-import 'react-select/dist/react-select.css';
 import { withStyles } from '@material-ui/core/styles';
 import Fade from '@material-ui/core/Fade';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import TextField from '@material-ui/core/TextField';
+import Button from '@material-ui/core/Button';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+import FormControl from '@material-ui/core/FormControl';
+import Select from '@material-ui/core/Select';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Checkbox from '@material-ui/core/Checkbox';
+import DayPicker, { DateUtils } from 'react-day-picker';
+import 'react-day-picker/lib/style.css';
+import MomentLocaleUtils from 'react-day-picker/moment';
+import moment from 'moment';
+import 'moment/locale/ru';
 
 import withCouchDB from '../hoc/withCouchDB';
 import { DocsView, DocView } from './DocsView';
+import ModalYesNo from './ModalYesNo';
 
 const styles = theme => ({
+  formSearch: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    padding: 0,
+    width: 400,
+    flexDirection: 'column'
+  },
+  formControl: {
+    margin: 0,
+    //minWidth: 120,
+  },
   textField: {
-    marginLeft: theme.spacing.unit,
-    marginRight: theme.spacing.unit,
-    width: 300,
+    width: 300
+  },
+  textArea: {
+    width: 750
+  },
+  error: {
+    color: theme.palette.primary.red
   }
 });
 
 class ExpertMode extends Component {
   state = {
     searching: false,
-    nailing: false
+    nailing: false,
+    from: undefined,
+    to: undefined
   }
 
   componentWillMount = () => {
@@ -34,7 +62,7 @@ class ExpertMode extends Component {
     this.props.setState({
       selectedSet: selectedSet,
       db_type: set.type,
-      selector: set.selector,
+      selector: JSON.stringify(set.selector, 0, 2),
       data
     });
   }
@@ -53,109 +81,121 @@ class ExpertMode extends Component {
     const sets = {
       doc: {
         type: 'doc',
-        selector: `{
-  "selector": {
-    "class_name": {
-      "$eq": "doc.calc_order"
-    },
-    "number_doc": {
-      "$regex": ""
-    }
-  },
-  "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"],
-  "limit": 100
-}`
+        selector: {
+          "selector": {
+            "class_name": {
+              "$eq": "doc.calc_order"
+            },
+            "number_doc": {
+              "$regex": ""
+            }
+          },
+          "fields": ["_id", "_rev", "number_doc", "partner", "date", "timestamp"],
+          "limit": 100
+        }
       },
       ram: {
         type: 'ram',
-        selector: `{
-  "selector": {
-    "name": {
-      "$regex": ""
-    }
-  },
-  "fields": ["_id", "_rev", "name", "timestamp"],
-  "limit": 100
-}`
+        selector: {
+          "selector": {
+            "name": {
+              "$regex": ""
+            }
+          },
+          "fields": ["_id", "_rev", "name", "date", "timestamp"],
+          "limit": 100
+        }
       },
       color: {
         type: 'ram',
-        selector: `{
-  "selector": {
-    "class_name": "cat.clrs",
-    "name": {
-      "$regex": ""
-    }
-  }
-}`
+        selector: {
+          "selector": {
+            "class_name": "cat.clrs",
+            "name": {
+              "$regex": ""
+            }
+          }
+        }
       },
       order: {
         type: 'doc',
-        selector: `{
-  "selector": {
-    "class_name": "doc.calc_order",
-    "number_doc": {
-      "$regex": ""
-    }
-  },
-  "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"]
-}`
+        selector: {
+          "selector": {
+            "class_name": "doc.calc_order",
+            "number_doc": {
+              "$regex": ""
+            }
+          },
+          "fields": ["_id", "_rev", "number_doc", "partner", "date", "timestamp"]
+        }
       },
       null_partner: {
         type: 'doc',
-        selector: `{
-  "selector": {
-    "class_name": {
-      "$eq": "doc.calc_order"
-    },
-    "partner": {
-      "$or": [
-        { "$eq": "00000000-0000-0000-0000-000000000000" },
-        { "$exists": false }
-      ]
-    },
-    "number_doc": {
-      "$regex": "^[\\\\d]{4}[\\\\S]{1,2}[\\\\d]{5,}$"
-    }
-  },
-  "fields": ["_id", "_rev", "number_doc", "partner", "timestamp"],
-  "limit": 100
-}`
+        selector: {
+          "selector": {
+            "class_name": {
+              "$eq": "doc.calc_order"
+            },
+            "partner": {
+              "$or": [
+                { "$eq": "00000000-0000-0000-0000-000000000000" },
+                { "$exists": false }
+              ]
+            },
+            "number_doc": {
+              "$regex": "^[\\d]{4}[\\S]{1,2}[\\d]{5,}$"
+            }
+          },
+          "fields": ["_id", "_rev", "number_doc", "partner", "date", "timestamp"],
+          "limit": 100
+        }
       }
     };
 
     return sets[set];
   }
 
-  handleChangeSet = (selectedSet) => {
-    if (selectedSet) {
-      const { value } = selectedSet;
-      const { type, selector } = this.getSets(value);
-      const { dbName, couchDB, getDBName } = this.props;
+  handleChangeSet = event => {
+    const { value } = event.target;
+    const { type, selector } = this.getSets(value);
+    const { dbName, couchDB, getDBName } = this.props;
 
-      dbName(getDBName(couchDB, type));
+    dbName(getDBName(couchDB, type));
 
-      this.props.setState({
-        selectedSet: value,
-        db_type: type,
-        selector: selector,
-        data: {}
-      });
-    }
-  }
+    this.props.setState({
+      selectedSet: value,
+      db_type: type,
+      selector: JSON.stringify(selector, 0, 2),
+      data: {}
+    });
+
+    this.setState({
+      [event.target.name]: value
+    });
+  };
 
   handleSubmit = event => {
     // предотвращаем передачу данных формой на сервер
     event.preventDefault();
 
-    const { selector } = event.target;
+    //const selector = event.target.selector.value;
+    const { selector } = this.props.state;
+    const { applyDate, from, to } = this.state;
 
     // проверка правильности ввода селектора
     try {
-      var json = JSON.parse(selector.value);
+      var json = JSON.parse(selector);
     } catch (e) {
       this.setState({ badSelector: true });
       return;
+    }
+
+    // применяем временной интервал
+    if (applyDate && from && to && !json.selector.date) {
+      json.selector.date = {
+        "$gte": moment(from).format('YYYY-MM-DD'),
+        "$lt": moment(to).add(1, 'days').format('YYYY-MM-DD')
+      };
     }
 
     // показываем процесс поиска
@@ -170,7 +210,7 @@ class ExpertMode extends Component {
         //if (response.status === 200) {
           const { data } = response;
           this.props.setState({
-            selector: selector.value,
+            selector: selector,
             data
           });
           // скрываем процесс поиска
@@ -179,7 +219,7 @@ class ExpertMode extends Component {
       })
       .catch(error => {
         this.props.setState({
-          selector: selector.value,
+          selector: selector,
           data: error
         });
         // скрываем процесс поиска
@@ -197,13 +237,10 @@ class ExpertMode extends Component {
     event.preventDefault();
 
     const { delay } = event.target;
-
     this.setState({
-      delay: delay.value
+      delay: delay.value,
+      wantNail: true
     });
-
-    //this.asyncRemove();
-    this.syncRemove();
   }
 
   stopRemove = () => {
@@ -297,15 +334,45 @@ class ExpertMode extends Component {
   }
 
   handleChange = name => event => {
+    let { value } = event.target;
+
     this.props.setState({
-      [name]: event.target.value,
+      [name]: value,
     });
   };
+
+  handleChecked = name => event => {
+    this.setState({ [name]: event.target.checked });
+  };
+
+  handleDayClick = day => {
+    const range = DateUtils.addDayToRange(day, this.state);
+    this.setState(range);
+  }
+
+  handleResetClick = () => {
+    this.setState({
+      from: undefined,
+      to: undefined,
+    });
+  }
+
+  handleNailYes = () => {
+    this.setState({ wantNail: undefined });
+    
+    //this.asyncRemove();
+    this.syncRemove();
+  }
+
+  handleNailNo = () => {
+    this.setState({ wantNail: undefined });
+  }
 
   render() {
     const { classes, couchDB: { roles } } = this.props;
     const { selectedSet, db_type, selector, delay, data, data: { docs, deleted }} = this.props.state;
-    const { searching, nailing, badSelector } = this.state;
+    const { searching, nailing, wantNail, applyDate, from, to, showSelector, badSelector } = this.state;
+    const modifiers = { start: from, end: to };
 
     // проверяем права на редактирование
     const allow =
@@ -314,32 +381,109 @@ class ExpertMode extends Component {
 
     return (
       <div>
+        {wantNail && (
+          <ModalYesNo onYes={this.handleNailYes} onNo={this.handleNailNo}>
+            <b>Прибить документы?</b>
+          </ModalYesNo>
+        )}
         <div className="tabs__content-title">
           Поиск
         </div>
         <br />
         <form
-          className="tabs__content-form mdc-theme--light"
+          className={classes.formSearch}
           onSubmit={this.handleSubmit}>
-          <Select
-            name="set"
-            value={selectedSet}
-            onChange={this.handleChangeSet}
-            options={this.getSetOptions()} /><br />
-          Тип базы данных: {db_type}<br />
+          <FormControl className={classes.formControl}>
+            <InputLabel htmlFor="set">Наборы</InputLabel>
+            <Select
+              value={selectedSet}
+              onChange={this.handleChangeSet}
+              inputProps={{
+                name: 'set',
+                id: 'set',
+              }}
+            >
+              {
+                this.getSetOptions().map(function (item) {
+                  return <MenuItem key={item.label} value={item.value}>
+                    {item.label}
+                  </MenuItem>;
+                })
+              }
+            </Select>
+          </FormControl>
           <br />
-          <div className="App-comments">
-            Для успешного прибития документов, поля "_id" и "_rev" должны присутствовать в параметрах отбора.
+          <div>
+            Тип базы данных: <b>{db_type}</b>
           </div>
-          <TextField
-            id="selector"
-            label="Параметры отбора"
-            className="mdc-textfield__textarea"
-            value={selector}
-            onChange={this.handleChange('selector')}
-            margin="normal"
-            multiline
+          <br />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={applyDate}
+                onChange={this.handleChecked('applyDate')}
+                value="applyDate"
+                color="primary"
+              />
+            }
+            label="Применить временной интервал к дате создания документа"
           />
+          {applyDate &&
+            <div>
+              <p>
+                {!from && !to && 'Пожалуйста выберите первый день.'}
+                {from && !to && 'Пожалуйста выберите последний день.'}
+                {from &&
+                  to && (
+                    <div>
+                      Выбрано с <b>
+                        {moment(from).locale('ru').format('DD MMMM YYYY')}
+                      </b> по <b>
+                        {moment(to).locale('ru').format('DD MMMM YYYY')}
+                      </b>
+                      <br />
+                      <br />
+                      <Button variant="raised" onClick={this.handleResetClick}>
+                        Сброс
+                      </Button>
+                    </div>
+                )}
+              </p>
+              <DayPicker
+                className="Selectable"
+                numberOfMonths={1}
+                selectedDays={[from, { from, to }]}
+                modifiers={modifiers}
+                onDayClick={this.handleDayClick}
+                locale={'ru'}
+                localeUtils={MomentLocaleUtils}
+              />
+            </div>
+          }
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showSelector}
+                onChange={this.handleChecked('showSelector')}
+                value="showSelector"
+                color="primary"
+              />
+            }
+            label="Показать параметры отбора"
+          />
+          {showSelector &&
+            <TextField
+              id="selector"
+              label="Параметры отбора"
+              className={classes.textArea}
+              value={selector}
+              onChange={this.handleChange('selector')}
+              margin="normal"
+              helperText='Для успешного прибития документов, поля "_id" и "_rev" должны присутствовать в параметрах отбора.'
+              multiline
+              required
+            />
+          }
           <div>
             {searching ? (
               <Fade
@@ -349,18 +493,18 @@ class ExpertMode extends Component {
                 <CircularProgress />
               </Fade>
             ) : (nailing ?
-              <button className="mdc-button mdc-button--primary mdc-button--raised" disabled>
+              <Button variant="raised" type="submit" disabled>
                 Найти
-              </button> :
-              <button className="mdc-button mdc-button--primary mdc-button--raised">
+              </Button> :
+              <Button variant="raised" type="submit">
                 Найти
-              </button>
+              </Button>
             )}
           </div>
         </form>
         <br />
         {badSelector &&
-          <div className="App-error">
+          <div className={classes.error}>
             <b>Ошибка в параметрах отбора!</b>
           </div>
         }
@@ -379,11 +523,12 @@ class ExpertMode extends Component {
                     <div>
                       <CircularProgress />
                       <br />
-                      <button
-                        className="mdc-button mdc-button--primary mdc-button--raised"
+                      <Button
+                        variant="outlined"
+                        className={classes.button}
                         onClick={this.stopRemove}>
                         Остановить
-                      </button>
+                      </Button>
                     </div>
                   </Fade>
                 </div>
@@ -400,12 +545,12 @@ class ExpertMode extends Component {
                       shrink: true,
                     }}
                     margin="normal"
+                    required
                   />
                   <br />
-                  <button
-                    className="mdc-button mdc-button--primary mdc-button--raised">
+                  <Button variant="raised" type="submit">
                     Прибить
-                  </button>
+                  </Button>
                 </form>
               )
             ) : (

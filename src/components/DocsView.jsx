@@ -1,10 +1,17 @@
 import React, { Component } from 'react';
+import moment from 'moment';
+import 'moment/locale/ru';
 
 function Row({ name, value, bgcolor }) {
-    const val = typeof(value) === "object" ?
+    let val = typeof(value) === "object" ?
       <DocView
         doc={value} /> :
       value;
+
+    if (name === 'moment' || name === 'date') {
+      var datetime = moment(val.replace(' ', ''));
+      val = datetime.locale('ru').format('DD MMMM YYYY, HH:mm:ss');
+    }
 
     return (
         <tr bgcolor={bgcolor} valign="top">

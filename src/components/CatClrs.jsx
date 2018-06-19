@@ -1,10 +1,19 @@
 import React, { Component } from 'react';
+import { withStyles } from '@material-ui/core/styles';
 import Fade from '@material-ui/core/Fade';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import TextField from '@material-ui/core/TextField';
+import Button from '@material-ui/core/Button';
 
-import Input from './Input';
 import withCouchDB from '../hoc/withCouchDB';
 import { DocsView, DocView } from './DocsView';
+import ModalYesNo from './ModalYesNo';
+
+const styles = theme => ({
+  textField: {
+    width: 300
+  }
+});
 
 class CatClrs extends Component {
   state = {
@@ -26,6 +35,9 @@ class CatClrs extends Component {
 
     const { clr_name } = event.target;
 
+    // замена всех обратных слешей на двойной, если присутствуют в наименовании
+    const clr = clr_name.value.replace(/\\/g, '\\\\');
+
     // показываем процесс поиска
     this.setState({ searching: true });
     
@@ -34,7 +46,7 @@ class CatClrs extends Component {
       "selector": {
         "class_name": "cat.clrs",
         "name": {
-          "$regex": clr_name.value
+          "$regex": clr
         }
       }
     };
@@ -61,6 +73,12 @@ class CatClrs extends Component {
   }
 
   handleRemove = () => {
+    this.setState({
+      wantNail: true
+    });
+  }
+  
+  asyncRemove = () => {
     const { data: { docs } } = this.props.state;
 
     // показываем процесс прибития
@@ -97,10 +115,26 @@ class CatClrs extends Component {
     });
   }
 
+  handleChange = name => event => {
+    this.props.setState({
+      [name]: event.target.value,
+    });
+  };
+
+  handleNailYes = () => {
+    this.setState({ wantNail: undefined });
+    
+    this.asyncRemove();
+  }
+
+  handleNailNo = () => {
+    this.setState({ wantNail: undefined });
+  }
+
   render() {
     const { couchDB: { roles } } = this.props;
     const { clr_name, data, data: { docs, deleted }} = this.props.state;
-    const { searching, nailing } = this.state;
+    const { searching, nailing, wantNail } = this.state;
 
     // проверяем права на редактирование
     const allow =
@@ -109,19 +143,27 @@ class CatClrs extends Component {
 
     return (
       <div>
+        {wantNail && (
+          <ModalYesNo onYes={this.handleNailYes} onNo={this.handleNailNo}>
+            <b>Прибить цвет?</b>
+          </ModalYesNo>
+        )}
         <div className="tabs__content-title">
           Поиск
         </div>
         <br />
         <form
-          className="tabs__content-form mdc-theme--light"
+          className="tabs__content-form"
           onSubmit={this.handleSubmit}>
-          <Input
+          <TextField
             id="clr_name"
             type="text"
-            placeholder="Название цвета"
+            label="Название цвета"
             value={clr_name}
-            required={true} />
+            onChange={this.handleChange('clr_name')}
+            required
+          />
+          <br />
           <div>
             {searching ? (
               <Fade
@@ -131,12 +173,12 @@ class CatClrs extends Component {
                 <CircularProgress />
               </Fade>
             ) : (nailing ?
-              <button className="mdc-button mdc-button--primary mdc-button--raised" disabled>
+              <Button variant="raised" type="submit" disabled>
                 Найти
-              </button> :
-              <button className="mdc-button mdc-button--primary mdc-button--raised">
+              </Button> :
+              <Button variant="raised" type="submit">
                 Найти
-              </button>
+              </Button>
             )}
           </div>
         </form>
@@ -154,11 +196,11 @@ class CatClrs extends Component {
                   <CircularProgress />
                 </Fade>
               ) : ( docs[0]._id && docs[0]._rev &&
-                <button
-                  className="mdc-button mdc-button--primary mdc-button--raised"
+                <Button
+                  variant="raised"
                   onClick={this.handleRemove}>
                   Прибить
-                </button>
+                </Button>
               )
             ) : (
               <div>
@@ -197,4 +239,4 @@ class CatClrs extends Component {
   }
 }
 
-export default withCouchDB(CatClrs);
+export default withCouchDB(withStyles(styles)(CatClrs));
