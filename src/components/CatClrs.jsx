@@ -36,7 +36,10 @@ class CatClrs extends Component {
     const { clr_name } = event.target;
 
     // замена всех обратных слешей на двойной, если присутствуют в наименовании
-    const clr = clr_name.value.replace(/\\/g, '\\\\');
+    const clr = clr_name.value
+      .replace(/\\/g, '\\\\')
+      .replace(/\(/, '\\(')
+      .replace(/\)/, '\\)')
 
     // показываем процесс поиска
     this.setState({ searching: true });
@@ -86,7 +89,7 @@ class CatClrs extends Component {
 
     let deleted = 0;
     const funcThen = response => {
-      //if (response.status === 500) {
+      //if (response.status === 200) {
         const { data } = response;
         if (data.ok) {
           deleted++;
