@@ -86,7 +86,7 @@ class CatClrs extends Component {
 
     let deleted = 0;
     const funcThen = response => {
-      //if (response.status === 200) {
+      //if (response.status === 500) {
         const { data } = response;
         if (data.ok) {
           deleted++;
