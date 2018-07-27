@@ -38,8 +38,8 @@ class CatClrs extends Component {
     // замена всех обратных слешей на двойной, если присутствуют в наименовании
     const clr = clr_name.value
       .replace(/\\/g, '\\\\')
-      .replace(/\(/, '\\(')
-      .replace(/\)/, '\\)')
+      .replace(/\(/g, '\\(')
+      .replace(/\)/g, '\\)')
 
     // показываем процесс поиска
     this.setState({ searching: true });
